@@ -1,66 +1,72 @@
-# Project WeMine
+# Test Cases Yemima Febe Yanti Marpaung - Project WeMine
 
-WeMine is a b2b saas product that has purpose to help people that work in mining sites record their activities, equipment condition, and report some missconducts.
+### Test Case List:
 
-## Platform Detail
+| Test Case ID | Test Case Title / Description | Priority |
+| :--- | :--- | :---: |
+| **FO-01** | Sign in successfully using a valid active username | P1 |
+| **FO-02** | Fail to sign in using a completely unregistered username | P1 |
+| **FO-03** | Handle empty string or special character payload during sign in lookup | P2 |
+| **FO-04** | Complete end-to-end authentication via Microsoft SSO login | P1 |
+| **FO-05** | Fail to sign in using an invalid password on Microsoft SSO | P1 |
+| **FO-06** | Complete first-time master data synchronization and trigger restart prompt | P1 |
+| **FO-07** | Handle network timeout and recovery during master data synchronization | P1 |
+| **FO-08** | Handle session token expiration and seamless re-auth in offline mode | P2 |
+| **F1-01** | Retrieve exact maximum dynamic form schema up to 50 fields | P2 |
+| **F1-02** | Restrict radio button field options to a maximum of 4 options | P2 |
+| **F1-03** | Render dynamic form UI and persist local offline draft | P1 |
+| **F1-04** | Validate dynamic fields and perform background media compression on low-spec devices | P2 |
+| **F2-01** | Trigger automatic workflow task upon hazard report submission via API | P1 |
+| **F2-02** | Enforce mandatory fields restriction on hazard report submission | P1 |
+| **F2-03** | Dispatch real-time push notification targeting specific area users and PIC | P1 |
+| **F2-04** | Complete PIC task resolution and add dynamic co-observers (+) | P1 |
+| **F2-05** | Dispatch direct supervisor notification upon task resolution completion | P2 |
 
-1. Mobile App is called WeMine
-2. Web is called WeMineOffice
-3. Backend Services are:
-   - Tenant Service handle tenant related configurations
-   - User Service handle user auth, registration, ect
-   - Notification Service handle push notification, emails, webhook, ect
-   - Equipment Service handle equipment assets related process
-   - Safety Service handle safety related features
-   - Order Service handle asset ordering features
-   - Workflow Service handle all process flow
+---
 
-## Main feature and characteristic
+## Detail Skenario Pengujian
 
-1. Mobile and Web are built with goal of they can be operated fully even when having a bad internet connection or not having one at all
-2. Application have a lot of forms that is dynamicly built using form builder from web
+### Flow 0: Sign-In & Sinkronisasi Data
 
-## Flow 0 - Sign in
+#### FO-01: Sign in successfully using a valid active username
+- **Category:** Automation (API)
+- **Pre-condition:** Akun pengguna aktif dan terdaftar di database tenant.
+- **Test Step:** Kirim request `POST` ke endpoint `/user/who` dengan parameter payload `username` yang valid dan aktif.
+- **Expected Result:** Server mengembalikan response HTTP `200 OK` beserta metadata tenant, konfigurasi, dan base endpoint yang sesuai.
 
-1. Mobile and Web app both have username field
-2. app will send api request to backend /user/who
-3. backend will lookup their tenant informations
-4. app will open a microsoft login screen to enter password
-5. app will request for user profile to /user/me
-6. app will request for list of master data /tenant/master
-7. app will request data for each endpoint given with progress bar (locations, sublocations, areas, employees, forms, ect)
-8. app will promp user to restart after updating their master data for the first time
+#### FO-02: Fail to sign in using a completely unregistered username
+- **Category:** Automation (API)
+- **Pre-condition:** Username belum pernah terdaftar di sistem tenant manapun.
+- **Test Step:** Kirim request `POST` ke endpoint `/user/who` menggunakan string `username` fiktif yang tidak ada di database.
+- **Expected Result:** Server menolak request dengan status HTTP `404 Not Found` atau pesan error validasi tenant.
 
-## Flow 1 - Equipment Inspection Form
+#### FO-03: Handle empty string or special character payload during sign in lookup
+- **Category:** Automation (API)
+- **Pre-condition:** Layanan backend `/user/who` aktif dan dapat diakses.
+- **Test Step:** Kirim request `POST` ke endpoint `/user/who` dengan payload `username` berupa string kosong (`""`), spasi kosong, atau karakter injeksi khusus (`<script>`, SQL syntax).
+- **Expected Result:** Sistem menolak request secara aman dengan status HTTP `400 Bad Request` tanpa mengalami *server crash* (HTTP 500).
 
-1. Web app have a form builder that have multiple type of fields, up to max of 50 fields:
-   - Input Text
-   - Input Date Picker
-   - Input Select
-   - Input Radio (up to four options)
-   - Image Picker
-2. App can open feature called `Equipment Inspection`, there will be list of previous submissions, and a button to redirect them to submission form that have fields:
-   - Form Code
-   - ... (dynamicly created for based on form code)
+#### FO-04: Complete end-to-end authentication via Microsoft SSO login
+- **Category:** Automation (E2E)
+- **Pre-condition:** Aplikasi terbuka, perangkat online, dan username terdaftar di sistem.
+- **Test Step:** 
+  1. Masukkan username valid $\rightarrow$ sistem memanggil endpoint `/user/who`.
+  2. Alihkan ke layar Microsoft Identity Login.
+  3. Masukkan kredensial password Microsoft yang benar $\rightarrow$ klik Sign In.
+  4. Verifikasi pemanggilan endpoint profil `/user/me`.
+- **Expected Result:** Autentikasi berhasil, sukses get token, profil pengguna dimuat dengan benar, dan aplikasi masuk ke halaman utama (*dashboard*).
 
-## Flow 2 - Safety Hazard Report
+#### FO-05: Fail to sign in using an invalid password on Microsoft SSO
+- **Category:** Automation (E2E)
+- **Pre-condition:** Aplikasi terbuka, perangkat online, dan menggunakan username yang valid.
+- **Test Step:** 
+  1. Masukkan username valid $\rightarrow$ lanjut ke layar Microsoft Login.
+  2. Masukkan password yang salah secara sengaja $\rightarrow$ klik Sign In.
+- **Expected Result:** Sistem Microsoft Identity menolak autentikasi dan menampilkan pesan error interaktif (*Incorrect password*) tanpa memberikan akses ke endpoint profil `/user/me`.
 
-1. Mobile App have menu called `Hazard`, users can see lsit of hazard reports and report their findings by filling fields below:
-   - Location - Select - Mandatory
-   - Sublocation - Select - Mandatory
-   - Area - Select - Mandatory
-   - Area Description - Text - Optional
-   - Evidence - Image Picker - Mandatory
-   - PIC - Select - Mandatory - Preselect to reporter
-2. On Submission, system will generate a hazard entry, and a followup task for it
-3. PIC will have to received a notification for the followup task, while all people in the area receive notification for the hazard
-4. PIC will have to go to location, fix the issue, and submit the followup task with information as follow:
-   - Evidence - Image Picker
-   - Resolution Date - DateTime picker - Mandatory
-   - Co Observer - Select with a (+) button to add more select fields
-5. Direct Supervisor of the area will receive notification for it
-
-## What to do
-
-1. Create cases for each flow, show us you can create a new repository to handle automation, and write few example for the most of importances.
-2. Explain why you pick the test tools, write down your cases [here](./testcases/readme.md)
+#### FO-06: Complete first-time master data synchronization and restart prompt
+- **Category:** Manual
+- **Pre-condition:** Pengguna baru melakukan login untuk pertama kalinya pada perangkat.
+- **Test Step:** 
+  1. Biarkan aplikasi memicu proses pengambilan data master dari endpoint `/tenant/master`.
+  2. Pantau pergerakan *progress bar* unduhan untuk data lokasi, sublokasi, area, karyawan,
